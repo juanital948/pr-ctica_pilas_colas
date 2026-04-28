@@ -1,6 +1,5 @@
 from estructuras import Queue, Stack
 
-
 class Paciente:
     def __init__(self, nombre, tipo):
         self.nombre = nombre
@@ -17,162 +16,174 @@ class Area:
         self.cola_pacientes = Queue()
 
     def __str__(self):
-        return self.nombre + " -> " + str(self.cola_pacientes)
+        return self.nombre + " [" + str(self.cola_pacientes) + "]"
 
 
 class Laboratorio:
-
     def __init__(self):
-        self.pila_areas = Stack()
-        self.pila_areas.push(Area("Entrega de resultados", 2))
-        self.pila_areas.push(Area("Validación", 1))
-        self.pila_areas.push(Area("Análisis", 2))
-        self.pila_areas.push(Area("Toma de muestras", 3))
+        self.areas = Stack()
+        self.areas.push(Area("Entrega de resultados", 2))
+        self.areas.push(Area("Validación de resultados", 1))
+        self.areas.push(Area("Análisis", 2))
+        self.areas.push(Area("Toma de muestras", 3))
 
     def agregar_paciente(self, nombre, tipo):
         paciente = Paciente(nombre, tipo)
-        self.pila_areas.top().cola_pacientes.enqueue(paciente)
+        self.areas.top().cola_pacientes.enqueue(paciente)
+        print("Paciente agregado correctamente.")
 
     def ejecutar_turno(self):
+        print("\n===== TURNO =====")
 
-        print("\n===== INICIO TURNO =====")
-
-        pila_invertida = Stack()
         pila_recorrido = Stack()
-        pila_pacientes_atendidos = Stack()
+        pila_atendidos = Stack()
 
-        while not self.pila_areas.is_empty():
-            pila_invertida.push(self.pila_areas.pop())
-
-        while not pila_invertida.is_empty():
-            self.pila_areas.push(pila_invertida.pop())
-
-        while not self.pila_areas.is_empty():
-
-            area_actual = self.pila_areas.pop()
-            pacientes_atendidos = Queue()
+        while not self.areas.is_empty():
+            area_actual = self.areas.pop()
+            atendidos_area = Queue()
 
             print("\nÁrea:", area_actual.nombre)
 
-            for _ in range(area_actual.capacidad):
-                if area_actual.cola_pacientes.is_empty():
-                    break
+            contador = 0
 
+            while contador < area_actual.capacidad and not area_actual.cola_pacientes.is_empty():
                 paciente = area_actual.cola_pacientes.dequeue()
                 print("Atendido:", paciente)
-                pacientes_atendidos.enqueue(paciente)
+                atendidos_area.enqueue(paciente)
+                contador += 1
+
+            if contador == 0:
+                print("No se atendieron pacientes.")
 
             print("En espera:", area_actual.cola_pacientes)
 
             pila_recorrido.push(area_actual)
-            pila_pacientes_atendidos.push(pacientes_atendidos)
+            pila_atendidos.push(atendidos_area)
 
         while not pila_recorrido.is_empty():
-
             area_actual = pila_recorrido.pop()
-            pacientes_atendidos = pila_pacientes_atendidos.pop()
+            atendidos_area = pila_atendidos.pop()
 
-            if not self.pila_areas.is_empty():
-                area_siguiente = self.pila_areas.top()
+            if not self.areas.is_empty():
+                area_siguiente = self.areas.top()
 
-                while not pacientes_atendidos.is_empty():
-                    area_siguiente.cola_pacientes.enqueue(
-                        pacientes_atendidos.dequeue()
-                    )
+                while not atendidos_area.is_empty():
+                    area_siguiente.cola_pacientes.enqueue(atendidos_area.dequeue())
+            else:
+                while not atendidos_area.is_empty():
+                    paciente_sale = atendidos_area.dequeue()
+                    print("Sale del laboratorio:", paciente_sale)
 
-            self.pila_areas.push(area_actual)
+            self.areas.push(area_actual)
 
-        print("\n===== FIN TURNO =====")
+        print("\n===== FIN DEL TURNO =====")
 
     def ejecutar_automatico(self):
-        numero_turno = 1
+        turno = 1
 
         while not self.esta_vacio():
-            print("\nTURNO", numero_turno)
+            print("\nTURNO", turno)
             self.ejecutar_turno()
-            numero_turno += 1
+            turno += 1
+
+        print("\nNo quedan pacientes en el laboratorio.")
 
     def esta_vacio(self):
-        pila_auxiliar = Stack()
+        auxiliar = Stack()
         vacio = True
 
-        while not self.pila_areas.is_empty():
-            area = self.pila_areas.pop()
+        while not self.areas.is_empty():
+            area = self.areas.pop()
 
             if not area.cola_pacientes.is_empty():
                 vacio = False
 
-            pila_auxiliar.push(area)
+            auxiliar.push(area)
 
-        while not pila_auxiliar.is_empty():
-            self.pila_areas.push(pila_auxiliar.pop())
+        while not auxiliar.is_empty():
+            self.areas.push(auxiliar.pop())
 
         return vacio
 
-    def eliminar_area(self, nombre_area):
+    def mostrar_estado(self):
+        auxiliar = Stack()
 
-        pila_auxiliar = Stack()
+        print("\n===== ESTADO DEL SISTEMA =====")
+
+        while not self.areas.is_empty():
+            area = self.areas.pop()
+            print(area.nombre)
+            print("Pacientes:", area.cola_pacientes)
+            print("Cantidad:", area.cola_pacientes.len())
+            auxiliar.push(area)
+
+        while not auxiliar.is_empty():
+            self.areas.push(auxiliar.pop())
+
+    def agregar_area(self, nombre, capacidad):
+        if capacidad <= 0:
+            print("La capacidad debe ser mayor que cero.")
+            return
+
+        self.areas.push(Area(nombre, capacidad))
+        print("Área agregada correctamente.")
+
+    def eliminar_area(self, nombre):
+        auxiliar = Stack()
         area_eliminada = None
 
-        while not self.pila_areas.is_empty():
-            area = self.pila_areas.pop()
+        while not self.areas.is_empty():
+            area = self.areas.pop()
 
-            if area.nombre == nombre_area:
+            if area.nombre == nombre:
                 area_eliminada = area
                 break
             else:
-                pila_auxiliar.push(area)
+                auxiliar.push(area)
 
-        if area_eliminada and not self.pila_areas.is_empty():
-            area_siguiente = self.pila_areas.top()
+        if area_eliminada is None:
+            while not auxiliar.is_empty():
+                self.areas.push(auxiliar.pop())
+
+            print("No se encontró el área.")
+            return
+
+        if not self.areas.is_empty():
+            area_siguiente = self.areas.top()
 
             while not area_eliminada.cola_pacientes.is_empty():
-                area_siguiente.cola_pacientes.enqueue(
-                    area_eliminada.cola_pacientes.dequeue()
-                )
+                area_siguiente.cola_pacientes.enqueue(area_eliminada.cola_pacientes.dequeue())
+        else:
+            while not area_eliminada.cola_pacientes.is_empty():
+                paciente_sale = area_eliminada.cola_pacientes.dequeue()
+                print("Paciente retirado del sistema:", paciente_sale)
 
-        while not pila_auxiliar.is_empty():
-            self.pila_areas.push(pila_auxiliar.pop())
+        while not auxiliar.is_empty():
+            self.areas.push(auxiliar.pop())
 
-    def agregar_area(self, nombre, capacidad):
-        self.pila_areas.push(Area(nombre, capacidad))
-
-    def mostrar_estado(self):
-
-        pila_auxiliar = Stack()
-
-        print("\n--- ESTADO DEL SISTEMA ---")
-
-        while not self.pila_areas.is_empty():
-            area = self.pila_areas.pop()
-            print(area)
-            pila_auxiliar.push(area)
-
-        while not pila_auxiliar.is_empty():
-            self.pila_areas.push(pila_auxiliar.pop())
+        print("Área eliminada correctamente.")
 
 
 def menu():
-
     laboratorio = Laboratorio()
 
     while True:
-
-        print("\n1. Agregar paciente")
+        print("\n===== MENÚ LABORATORIO =====")
+        print("1. Agregar paciente")
         print("2. Ejecutar turno")
         print("3. Ejecutar automático")
         print("4. Eliminar área")
-        print("5. Agregar área")
-        print("6. Mostrar estado")
+        print("5. Agregar nueva área")
+        print("6. Consultar estado")
         print("0. Salir")
 
-        opcion = input("Opción: ")
+        opcion = input("Seleccione una opción: ")
 
         if opcion == "1":
-            nombre = input("Nombre: ")
-            tipo = input("Tipo (adulto/niño): ").lower()
+            nombre = input("Nombre del paciente: ")
+            tipo = input("Tipo de paciente adulto/niño: ").lower()
 
-            while tipo not in ["adulto", "niño"]:
+            while tipo != "adulto" and tipo != "niño":
                 tipo = input("Ingrese adulto o niño: ").lower()
 
             laboratorio.agregar_paciente(nombre, tipo)
@@ -184,19 +195,23 @@ def menu():
             laboratorio.ejecutar_automatico()
 
         elif opcion == "4":
-            laboratorio.eliminar_area(input("Área: "))
+            nombre = input("Nombre del área a eliminar: ")
+            laboratorio.eliminar_area(nombre)
 
         elif opcion == "5":
-            laboratorio.agregar_area(
-                input("Nombre: "),
-                int(input("Capacidad: "))
-            )
+            nombre = input("Nombre de la nueva área: ")
+            capacidad = int(input("Capacidad por turno: "))
+            laboratorio.agregar_area(nombre, capacidad)
 
         elif opcion == "6":
             laboratorio.mostrar_estado()
 
         elif opcion == "0":
+            print("Programa finalizado.")
             break
+
+        else:
+            print("Opción inválida.")
 
 
 menu()
